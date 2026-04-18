@@ -1,3 +1,4 @@
+
 # AI Health Assist — Multi-Role Healthcare & Education Platform
 
 A unified AI-powered platform connecting **Patients**, **Medical Students**, **Doctors**, and **Professors** with personalized dashboards, AI assistance, health habit tracking, appointment booking, and learning support.
