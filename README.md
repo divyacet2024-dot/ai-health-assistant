@@ -73,6 +73,8 @@ A **unified AI-powered platform** that simplifies healthcare access and medical 
 - **AI Health Chatbot** — Context-aware health Q&A with typing indicators
 - **Appointment Booking** — Select department → doctor → date → time slot → get queue token
 - **Medicine Scanner** — Search 10+ medicines for usage, dosage, side effects, warnings, pricing
+- **AI Medicine Scanner** — Upload medicine image for AI-powered recognition (Gemini Vision)
+- **Emergency Response System** — Simulated emergency mode with route optimization, hospital switching, first aid guidance
 - **Lab Reports Viewer** — Color-coded results with normal range comparisons
 - **Fee Payment & Token** — Pay hospital fees online, get instant queue token (skip the line)
 - **Data Export** — Download health data as CSV or JSON
@@ -136,6 +138,8 @@ A **unified AI-powered platform** that simplifies healthcare access and medical 
 | `/dashboard/health-insights` | AI correlation insights, filterable cards, weekly health report |
 | `/dashboard/health-goals` | Goal sliders, streak tracking, achievement badges, data export |
 | `/dashboard/chat` | AI health chatbot |
+| `/dashboard/scan` | AI Medicine Scanner |
+| `/dashboard/emergency` | Emergency Response System |
 | `/dashboard/appointments` | Book appointments with token generation |
 | `/dashboard/medicine` | Medicine search with detailed info modals |
 | `/dashboard/reports` | Lab reports viewer |
@@ -160,13 +164,15 @@ A **unified AI-powered platform** that simplifies healthcare access and medical 
 | `/dashboard/materials` | Teaching material sharing |
 | `/dashboard/schedule` | Class schedule management |
 
-### API Endpoints (11 routes)
+### API Endpoints (13 routes)
 | Endpoint | Methods | Description |
 |----------|---------|-------------|
 | `/api/auth` | GET, POST | Auth status & actions |
 | `/api/appointments` | GET, POST, PUT | Appointment CRUD |
 | `/api/chat` | GET, POST, DELETE | Chat message persistence |
 | `/api/medicine` | GET | Medicine search (`?q=query`) |
+| `/api/scan` | POST | AI Medicine Scanner (image analysis) |
+| `/api/emergency` | POST | Emergency Response System |
 | `/api/reports` | GET | Lab reports |
 | `/api/payments` | GET, POST | Payments + token generation |
 | `/api/study-tasks` | GET, POST, PUT, DELETE | Study planner tasks |
@@ -197,6 +203,7 @@ npm install
 # 3. Set up environment variables
 cp .env.example .env
 # Edit .env with your MongoDB URI (optional — app works without it)
+# Add GEMINI_API_KEY for AI features (get free key at https://aistudio.google.com/app/apikey)
 
 # 4. Start the development server
 npm run dev
@@ -232,6 +239,7 @@ docker run -d -p 27017:27017 --name mongodb mongo:latest
 Then set in `.env`:
 ```
 MONGODB_URI=mongodb://localhost:27017/ai_health_assist
+GEMINI_API_KEY=your_google_gemini_api_key
 ```
 
 ---
@@ -261,6 +269,8 @@ web/
 │   │   │   ├── health-insights/        # AI insights & weekly report
 │   │   │   ├── health-goals/           # Goals, streaks, badges
 │   │   │   ├── chat/page.tsx           # AI chatbot
+│   │   │   ├── scan/                   # AI Medicine Scanner
+│   │   │   ├── emergency/            # Emergency Response System
 │   │   │   ├── appointments/           # Appointment booking
 │   │   │   ├── medicine/               # Medicine search
 │   │   │   ├── reports/                # Lab reports
@@ -273,6 +283,8 @@ web/
 │   │   │   ├── materials/              # Teaching materials
 │   │   │   └── schedule/               # Class schedule
 │   │   └── api/                        # REST API routes
+│   │       ├── scan/route.ts           # AI Medicine Scanner
+│   │       ├── emergency/route.ts      # Emergency Response
 │   │       ├── auth/route.ts
 │   │       ├── appointments/route.ts
 │   │       ├── chat/route.ts
@@ -402,6 +414,16 @@ DELETE /api/schedule?id=xxx → Delete class
 ### Token Counter
 ```
 POST /api/token             → Get next token number
+```
+
+### AI Medicine Scanner
+```
+POST /api/scan              → { action: "scan", image: "base64..." }
+```
+
+### Emergency Response
+```
+POST /api/emergency        → { action: "activate" | "optimize-route" | "crowd-alert" | "first-aid" | "suggest-hospitals" }
 ```
 
 ---
