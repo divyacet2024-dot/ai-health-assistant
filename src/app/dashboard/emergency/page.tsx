@@ -34,6 +34,7 @@ interface Ambulance {
 interface FirstAidGuide {
   title: string;
   steps: string[];
+  disclaimer: string;
 }
 
 export default function EmergencyPage() {
