@@ -101,11 +101,11 @@ export default function LandingPage() {
               className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10"
             >
               <Link
-                href="/select-role"
+                href="/ai-assistant"
                 className="inline-flex items-center gap-2 px-8 py-3.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:opacity-90 transition shadow-lg shadow-primary/25"
               >
                 <Zap className="w-4.5 h-4.5" />
-                Start Using Now
+                Launch AI Assistant
               </Link>
               <a
                 href="#features"

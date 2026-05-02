@@ -124,10 +124,10 @@ export function AuthForm({ mode, role, roleLabel, extraFields = [] }: AuthFormPr
           setRole(role as UserRole);
         }
 
-        setSuccess('Login successful! Redirecting...');
+        setSuccess('Login successful! Redirecting to AI Assistant...');
         setLoading(false);
 
-        const redirectUrl = role === 'admin' ? '/admin' : '/dashboard';
+        const redirectUrl = role === 'admin' ? '/admin' : '/ai-assistant';
         window.location.href = redirectUrl;
       } catch (err) {
         setError('An error occurred. Please try again.');
@@ -144,7 +144,6 @@ export function AuthForm({ mode, role, roleLabel, extraFields = [] }: AuthFormPr
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Left Panel - Branding */}
       <div className={cn('hidden lg:flex lg:w-[45%] bg-gradient-to-br text-white flex-col justify-between p-10', colors.gradient)}>
         <div>
           <Link href="/" className="flex items-center gap-2.5">
@@ -171,14 +170,12 @@ export function AuthForm({ mode, role, roleLabel, extraFields = [] }: AuthFormPr
         <p className="text-white/50 text-xs">AI Health Assist — Multi-Role Healthcare Platform</p>
       </div>
 
-      {/* Right Panel - Form */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md"
         >
-          {/* Mobile back + branding */}
           <div className="lg:hidden mb-8">
             <Link href="/select-role" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition mb-6">
               <ArrowLeft className="w-4 h-4" /> Back to role selection
@@ -194,7 +191,6 @@ export function AuthForm({ mode, role, roleLabel, extraFields = [] }: AuthFormPr
             </div>
           </div>
 
-          {/* Desktop header */}
           <div className="hidden lg:block mb-8">
             <Link href="/select-role" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition mb-4">
               <ArrowLeft className="w-4 h-4" /> Back to role selection
@@ -215,7 +211,6 @@ export function AuthForm({ mode, role, roleLabel, extraFields = [] }: AuthFormPr
             </div>
           )}
 
-          {/* Error / Success */}
           {error && (
             <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
               className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl p-3 mb-4 text-sm">
@@ -265,7 +260,6 @@ export function AuthForm({ mode, role, roleLabel, extraFields = [] }: AuthFormPr
               </div>
             )}
 
-            {/* Extra role-specific fields */}
             {mode === 'register' && extraFields.map((field) => (
               <div key={field.name}>
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
@@ -299,7 +293,6 @@ export function AuthForm({ mode, role, roleLabel, extraFields = [] }: AuthFormPr
             </button>
           </form>
 
-          {/* Toggle login/register */}
           <p className="text-center text-sm text-muted-foreground mt-6">
             {mode === 'login' ? (
               <>Don&apos;t have an account?{' '}
@@ -320,7 +313,6 @@ export function AuthForm({ mode, role, roleLabel, extraFields = [] }: AuthFormPr
             )}
           </p>
 
-          {/* Demo credentials for hackathon */}
           {mode === 'login' && (
             <div className="mt-6 bg-muted/50 rounded-xl p-4 text-xs text-muted-foreground">
               <p className="font-semibold mb-1">Demo Credentials:</p>
