@@ -1,0 +1,225 @@
+// prisma/schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  password        String // bcrypt hashed
+  name            String?
+  role            UserRole  @default(PATIENT)
+  phone           String?
+  address         String?
+  profileImage    String?
+  firebaseUid     String?   @unique
+  totpSecret      String?  // Speakeasy TOTP base32
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+
+  appointments    Appointment[]
+  doctorAppointments Appointment[] @relation("DoctorAppointments")
+  prescriptions   Prescription[]
+  payments        Payment[]
+  schedules       Schedule[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Appointment {
+  id            String    @id @default(cuid())
+  userId        String
+  doctorId      String?
+  departmentId  String?
+  date          DateTime
+  time          String
+  reason        String?
+  status        AppointmentStatus @default(SCHEDULED)
+  tokenNumber   Int?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doctor        User?     @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  department    Department? @relation(fields: [departmentId], references: [id])
+
+  @@index([userId])
+  @@index([doctorId])
+  @@index([date])
+  @@index([status])
+  @@map("appointments")
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  description String?
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  appointments Appointment[]
+
+  @@map("departments")
+}
+
+model Prescription {
+  id          String   @id @default(cuid())
+  userId      String
+  medicineId  String
+  dosage      String
+  frequency   String
+  duration    String
+  prescribedBy String?
+  startDate   DateTime
+  endDate     DateTime?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medicine    Medicine @relation(fields: [medicineId], references: [id])
+
+  @@index([userId])
+  @@index([medicineId])
+  @@index([startDate])
+  @@map("prescriptions")
+}
+
+model Medicine {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  genericName   String
+  category      String
+  manufacturer  String?
+  usage         String
+  dosage        String
+  sideEffects   String[]
+  warnings      String[]
+  price         Float
+  inStock       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  prescriptions Prescription[]
+
+  @@index([category])
+  @@index([name])
+  @@map("medicines")
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  userId        String
+  appointmentId String?
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  method        PaymentMethod @default(UPI)
+  transactionId String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+model Schedule {
+  id            String   @id @default(cuid())
+  userId        String
+  doctorId      String?
+  dayOfWeek     Int
+  startTime     String
+  endTime       String
+  slotDuration  Int      @default(30)
+  isAvailable   Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dayOfWeek])
+  @@index([userId])
+  @@map("schedules")
+}
+
+enum UserRole {
+  PATIENT
+  STUDENT
+  DOCTOR
+  PROFESSOR
+  ADMIN
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  UPI
+  CREDIT_CARD
+  DEBIT_CARD
+  BANK_TRANSFER
+  CASH
+}

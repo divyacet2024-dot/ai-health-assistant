@@ -6,6 +6,7 @@ import { Send, Bot, User, Trash2, Sparkles, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ChatMessage, UserRole, ROLES } from '@/lib/types';
 import { getChatHistory, saveChatHistory, clearChatHistory } from '@/lib/store';
+import { useUserLocation } from '@/hooks/use-user-location';
 
 const ROLE_GREETINGS: Record<UserRole, string> = {
   patient: "Hello! I'm your **AI Health Assistant** powered by Google Gemini. I can help you with health questions, medicine information, understanding lab reports, and more. How can I help you today?",
@@ -22,6 +23,7 @@ export function ChatUI({ role }: { role: UserRole }) {
   const [aiEnabled, setAiEnabled] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { location: clientLocation } = useUserLocation();
 
   useEffect(() => {
     setMounted(true);
@@ -66,10 +68,22 @@ export function ChatUI({ role }: { role: UserRole }) {
         body: JSON.stringify({
           message: userMsg.content,
           userRole: role,
+          preferredLanguage: 'auto',
           history: newMessages.filter((m) => m.id !== 'greeting').slice(-10).map((m) => ({
             role: m.role,
             content: m.content,
           })),
+          ...(clientLocation
+            ? {
+                location: {
+                  latitude: clientLocation.latitude,
+                  longitude: clientLocation.longitude,
+                  ...(clientLocation.accuracy != null
+                    ? { accuracy: clientLocation.accuracy }
+                    : {}),
+                },
+              }
+            : {}),
         }),
       });
 

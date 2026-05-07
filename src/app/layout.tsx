@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import "./globals.css";
-import { ThemeProvider } from "@/app/providers/theme-provider";
+import { Providers } from "@/app/providers";
 
 const dmSans = DM_Sans({
   variable: "--font-sans",
@@ -36,14 +36,14 @@ export default function RootLayout({
       <body
         className={`${dmSans.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <ThemeProvider
+        <Providers
           attribute="class"
           defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >
           {children}
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

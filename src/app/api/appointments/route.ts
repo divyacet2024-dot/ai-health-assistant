@@ -2,9 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
 import { COLLECTIONS } from '@/lib/models';
 
-// GET all appointments
-export async function GET() {
+import { getServerSession } from 'next-auth/next';
+import { authConfig } from '../auth/[...nextauth]/route';
+import { hasPermission } from '@/lib/rbac';
+import type { UserRole } from '@prisma/client';
+
+// GET appointments (RBAC protected)
+export async function GET(req: Request) {
   try {
+    const session = await getServerSession(authConfig)
+    if (!session?.user?.id || !session.user.role) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const role = session.user.role as UserRole
+    const userId = session.user.id
+
+    // Patients: own appointments only
+    // Doctors/Admin: all appointments
+    if (!hasPermission(role, 'read:own-data')) {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+    }
     const col = await getCollection(COLLECTIONS.appointments);
     const appointments = await col.find().sort({ createdAt: -1 }).toArray();
     return NextResponse.json({ success: true, data: appointments });
@@ -25,6 +43,7 @@ export async function POST(req: NextRequest) {
       { $inc: { value: 1 } },
       { upsert: true, returnDocument: 'after' }
     );
+
 
     const tokenNumber = counter?.value ?? 1;
     const doc = { ...body, tokenNumber, status: 'scheduled', createdAt: new Date() };

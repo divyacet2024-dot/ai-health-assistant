@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Mic, Send, ChevronLeft, Heart, GraduationCap, Stethoscope, BookOpen,
@@ -9,11 +10,16 @@ import {
   ChevronDown, Settings, Volume2, VolumeX, Smile, Frown, Meh,
   Zap, Clock, CheckCircle, Star, Flame, Trophy, Target, Gift, Lightbulb,
   Baby, HeartPulse, Droplets, Moon, Apple, Dumbbell, Brain as BrainIcon,
-  Sparkles, Bot, User, X, Plus, Minus, Info, Siren, MessageSquare, Calendar, Pill
+  Sparkles, Bot, User, X, Plus, Minus, Info, Siren, MessageSquare, Calendar, Pill, Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserRole } from '@/lib/types';
 import { ROLES } from '@/lib/types';
+import { LANGUAGES } from '@/lib/languages';
+import { useVoiceAgent } from '@/hooks/useVoiceAgent';
+import { useUserLocation } from '@/hooks/use-user-location';
+import { useLanguageDetector, useUserLanguage } from '@/hooks/use-language-detector';
+import { LanguageSelector } from '@/components/LanguageSelector';
 
 // ========== INTENT DETECTION ==========
 
@@ -146,7 +152,8 @@ const SYSTEM_PROMPTS: Record<UserRole, string> = {
 };
 
 const ROLE_GREETINGS: Record<UserRole, string> = {
-  patient: "Hello! I'm your AI Health Assistant. I can help you with health questions, medicine information, understanding lab reports, and more. How can I help you today?",
+  patient:
+    "Hi — I’m here to help with symptoms, medicines in general terms, booking a visit, or quick questions. What’s going on today?",
   student: "Hi there! I'm your AI Medical Tutor. Ask me about any medical topic — anatomy, physiology, pharmacology, pathology, or clinical subjects. I'll explain concepts clearly with clinical correlations. What would you like to learn?",
   doctor: "Good day, Doctor. I'm your AI Clinical Assistant. I can help with differential diagnosis suggestions, drug interaction checks, treatment guidelines, and clinical decision support. How can I assist?",
   professor: "Welcome, Professor. I'm your AI Teaching Assistant. I can help create teaching materials, suggest assessment methods, answer complex medical queries, and organize resources. What do you need?",
@@ -162,34 +169,33 @@ interface Message {
 
 interface UnifiedAIAssistantProps {
   role: UserRole;
-  onNavigate?: (path: string) => void;
 }
 
-export function UnifiedAIAssistant({ role, onNavigate }: UnifiedAIAssistantProps) {
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [recognizedText, setRecognizedText] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+const motionVariants = {
+  pop: { initial: { opacity: 0, scale: 0.96 }, animate: { opacity: 1, scale: 1 } },
+  fadeUp: { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } },
+  fadeIn: { initial: { opacity: 0 }, animate: { opacity: 1 } },
+  presence: { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } },
+} as const;
+
+export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
+  const [inputText, setInputText] = useState('');
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
-  const [currentIntent, setCurrentIntent] = useState<DetectedIntent | null>(null);
   const [showReasoning, setShowReasoning] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
-  const [voiceSupported, setVoiceSupported] = useState(false);
-  
-  const recognitionRef = useRef<any>(null);
-  const speechSynthesisRef = useRef<SpeechSynthesis | null>(null);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+
   const roleInfo = ROLES[role];
   
-  // Detect browser support
+  const router = useRouter();
+  
+  // Initialize on mount
   useEffect(() => {
     setMounted(true);
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    setVoiceSupported(!!SpeechRecognition);
-    speechSynthesisRef.current = window.speechSynthesis;
   }, []);
+
   
   // Auto-scroll messages
   useEffect(() => {
@@ -197,284 +203,60 @@ export function UnifiedAIAssistant({ role, onNavigate }: UnifiedAIAssistantProps
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [conversationHistory]);
-  
-  // ========== VOICE RECOGNITION ==========
-  
+
+  // Language management
+  const { preferredLanguage, setLanguage, isAuto: isAutoLanguage } = useUserLanguage();
+  const { detectedLanguage } = useLanguageDetector(inputText);
+  const { location: clientLocation, status: locStatus } = useUserLocation();
+
+
+  // Compute the actual language used for response
+  const effectiveLanguage = useMemo(() => {
+    return isAutoLanguage ? detectedLanguage : preferredLanguage;
+  }, [isAutoLanguage, detectedLanguage, preferredLanguage]);
+
+  const voice = useVoiceAgent({
+    role,
+    preferredLanguage: effectiveLanguage,
+    voiceOutputEnabled: voiceEnabled,
+    clientLocation,
+    router,
+    onUserText: (text) => {
+      const userMessage: Message = { text, isUser: true, timestamp: new Date() };
+      setConversationHistory((prev) => [...prev, userMessage]);
+    },
+    onAssistantText: (text) => {
+      const aiMessage: Message = { text, isUser: false, timestamp: new Date(), source: 'fallback' };
+      setConversationHistory((prev) => [...prev, aiMessage]);
+    },
+  });
+
+  const isListening = voice.listening && !voice.processing;
+  const displayTranscript = voice.interimTranscript || voice.transcript;
+
   const startListening = useCallback(() => {
-    if (!voiceSupported) return;
-    
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = false;
-    recognitionRef.current.lang = 'en-US';
-    recognitionRef.current.interimResults = false;
-    recognitionRef.current.maxAlternatives = 1;
-    
-    recognitionRef.current.onstart = () => {
-      setIsListening(true);
-      setIsProcessing(false);
-    };
-    
-    recognitionRef.current.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setRecognizedText(transcript);
-      setIsListening(false);
-      
-      const userMessage: Message = { text: transcript, isUser: true, timestamp: new Date() };
-      setConversationHistory(prev => [...prev, userMessage]);
-      
-      processMessage(transcript);
-    };
-    
-    recognitionRef.current.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
-      setIsListening(false);
-      setIsProcessing(false);
-    };
-    
-    recognitionRef.current.onend = () => {
-      setIsListening(false);
-    };
-    
-    recognitionRef.current.start();
-  }, [voiceSupported]);
-  
+    setInputText('');
+    void voice.startListening();
+  }, [voice]);
+
   const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
-    setIsListening(false);
-  }, []);
-  
-  // ========== TEXT-TO-SPEECH ==========
-  
-  const speak = useCallback((text: string) => {
-    if (!voiceEnabled || !speechSynthesisRef.current) return;
-    
-    setIsSpeaking(true);
-    speechSynthesisRef.current.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    utterance.volume = 0.8;
-    
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = (event) => {
-      console.error('Speech synthesis error:', event.error);
-      setIsSpeaking(false);
-    };
-    
-    speechSynthesisRef.current.speak(utterance);
-  }, [voiceEnabled]);
-  
-  const stopSpeaking = useCallback(() => {
-    if (speechSynthesisRef.current) {
-      speechSynthesisRef.current.cancel();
-    }
-    setIsSpeaking(false);
-  }, []);
-  
-  // ========== AGENT REASONING & DECISION ENGINE ==========
-  
-  const createAgentReasoning = (text: string, intent: DetectedIntent, role: UserRole) => {
-    const analysis = `Analyzing user query: "${text.slice(0, 100)}". Detected intent: ${intent.type} with confidence ${intent.confidence}. User role: ${role}. Context: ${intent.extractedInfo && Object.keys(intent.extractedInfo).length > 0 ? JSON.stringify(intent.extractedInfo) : 'No specific context extracted.'}`;
-    
-    let decision = '';
-    if (intent.type === 'emergency') {
-      decision = 'CRITICAL: Emergency detected. Override LLM with safety protocol. Provide immediate guidance and redirect to emergency services.';
-    } else if (intent.type === 'greeting') {
-      decision = 'User greeted. Respond with role-appropriate greeting and offer assistance.';
-    } else if (intent.type === 'thanks') {
-      decision = 'User expressed thanks. Acknowledge politely and offer further help.';
-    } else {
-      decision = `Query requires contextual response. Use LLM with ${role}-specific system prompt for personalized assistance.`;
-    }
-    
-    return { analysis, decision };
-  };
-  
-  // ========== ACTION/TOOL SYSTEM ==========
-  
-  const executeAction = (intent: DetectedIntent) => {
-    if (!onNavigate) return;
-    
-    switch (intent.type) {
-      case 'emergency':
-        setTimeout(() => onNavigate('/dashboard/emergency'), 1500);
-        break;
-      case 'appointment':
-        setTimeout(() => onNavigate('/dashboard/appointments'), 1000);
-        break;
-      case 'medicine':
-        setTimeout(() => onNavigate('/dashboard/medicine'), 1000);
-        break;
-    }
-  };
-  
-  // ========== MESSAGE PROCESSING ==========
-  
-  const processMessage = async (message: string) => {
-    setIsProcessing(true);
-    
-    // Detect intent (emergency detection overrides everything)
-    const intent = detectIntent(message, role);
-    setCurrentIntent(intent);
-    
-    // EMERGENCY DETECTION - Takes priority over LLM
-    if (intent.type === 'emergency') {
-      const emergencyResponse = 'dYs" **EMERGENCY DETECTED!** dYs"\n\nIf this is a real emergency, **call 108 immediately** or go to the nearest hospital.\n\nI\'m activating emergency protocols. Would you like me to show you the emergency response procedures?';
-      
-      const aiMessage: Message = { 
-        text: emergencyResponse, 
-        isUser: false, 
-        timestamp: new Date(),
-        source: 'fallback'
-      };
-      setConversationHistory(prev => [...prev, aiMessage]);
-      setIsProcessing(false);
-      
-      if (voiceEnabled) speak(emergencyResponse);
-      executeAction(intent);
-      return;
-    }
-    
-    // Quick responses for greetings and thanks (bypass LLM for speed)
-    const isGreeting = GREETING_KEYWORDS.some(kw => message.toLowerCase().includes(kw));
-    const isThanks = THANKS_KEYWORDS.some(kw => message.toLowerCase().includes(kw));
-    
-    if (isThanks) {
-      const thanksResponse = "You're welcome! I'm glad I could help. Is there anything else you need assistance with today?";
-      const aiMessage: Message = { 
-        text: thanksResponse, 
-        isUser: false, 
-        timestamp: new Date(),
-        source: 'fallback'
-      };
-      setConversationHistory(prev => [...prev, aiMessage]);
-      setIsProcessing(false);
-      if (voiceEnabled) speak(thanksResponse);
-      return;
-    }
-    
-    if (isGreeting) {
-      const greetingResponse = ROLE_GREETINGS[role];
-      const aiMessage: Message = { 
-        id: 'greeting',
-        text: greetingResponse, 
-        isUser: false, 
-        timestamp: new Date(),
-        source: 'fallback'
-      };
-      setConversationHistory(prev => [...prev, aiMessage]);
-      setIsProcessing(false);
-      if (voiceEnabled) speak(greetingResponse);
-      return;
-    }
-    
-    // Use Gemini API via Next.js route handler for LLM-powered responses
-    // Include conversation history for context preservation
-    const chatHistory = conversationHistory
-      .filter(m => m.id !== 'greeting')
-      .slice(-10) // Last 10 messages for context window
-      .map(m => ({
-        role: m.isUser ? 'user' : 'assistant' as const,
-        content: m.text,
-      }));
-    
-    try {
-      const res = await fetch('/api/ai-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message,
-          userRole: role,
-          history: chatHistory,
-        }),
-      });
-      
-      const json = await res.json();
-      
-      if (json.success && json.data) {
-        const aiMessage: Message = {
-          text: json.data.content,
-          isUser: false,
-          timestamp: new Date(),
-          source: json.data.source || 'gemini',
-        };
-        setConversationHistory(prev => [...prev, aiMessage]);
-        setIsProcessing(false);
-        
-        if (voiceEnabled) {
-          speak(json.data.content);
-        }
-      } else {
-        throw new Error(json.error || 'Failed to get AI response');
-      }
-    } catch (error: any) {
-      console.error('AI chat error:', error);
-      
-      // Fallback responses
-      const fallbacks = {
-        patient: 'Connection issue. For health concerns, stay hydrated and rest. Monitor symptoms. Need immediate help? Call 108.',
-        student: 'Connection issue. Focus on understanding mechanisms, not just memorization. Create diagrams and use mnemonics!',
-        doctor: 'Service unavailable. Rely on current clinical guidelines and institutional protocols for decision-making.',
-        professor: 'Service unavailable. Try interactive case-based discussions or peer-teaching strategies.'
-      };
-      
-      const fb = fallbacks[role];
-      const aiMessage: Message = { 
-        text: fb, 
-        isUser: false, 
-        timestamp: new Date(),
-        source: 'fallback'
-      };
-      setConversationHistory(prev => [...prev, aiMessage]);
-      setIsProcessing(false);
-      if (voiceEnabled) speak(fb);
-    }
-  };
-  
+    void voice.stopListening();
+  }, [voice]);
+
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recognizedText.trim()) return;
-    
-    const userMessage: Message = { 
-      text: recognizedText, 
-      isUser: true, 
-      timestamp: new Date() 
-    };
-    setConversationHistory(prev => [...prev, userMessage]);
-    
-    processMessage(recognizedText);
-    setRecognizedText('');
+    if (!inputText.trim()) return;
+    void voice.submitText(inputText);
+    setInputText('');
   };
   
+  // Intentionally keep only routing logic here (no optional callbacks)
   const handleEmergencyAction = () => {
-    if (onNavigate) {
-      onNavigate('/dashboard/emergency');
-    }
+    console.log('Button clicked: Emergency');
+    router.push('/dashboard/emergency');
   };
-  
-  const handleIntentAction = () => {
-    if (!currentIntent || !onNavigate) return;
-    
-    switch (currentIntent.type) {
-      case 'patient_symptom':
-        onNavigate('/dashboard/chat');
-        break;
-      case 'appointment':
-        onNavigate('/dashboard/appointments');
-        break;
-      case 'medicine':
-        onNavigate('/dashboard/medicine');
-        break;
-      case 'student_query':
-        onNavigate('/dashboard/chat');
-        break;
-    }
-  };
+
+
   
   if (!mounted) return null;
   
@@ -489,13 +271,14 @@ export function UnifiedAIAssistant({ role, onNavigate }: UnifiedAIAssistantProps
     <div className="min-h-screen bg-background flex flex-col">
       {/* ========== HEADER ========== */}
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border">
+        {/* Top row: role info + language + emergency */}
         <div className="flex items-center justify-between px-4 py-3 max-w-2xl mx-auto">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => onNavigate?.('/select-role')}
-              className="p-2 rounded-xl hover:bg-muted transition"
-              aria-label="Switch profile"
-            >
+              <button
+                onClick={() => router.push('/select-role')}
+                className="p-2 rounded-xl hover:bg-muted transition"
+                aria-label="Switch profile"
+              >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-2">
@@ -508,41 +291,125 @@ export function UnifiedAIAssistant({ role, onNavigate }: UnifiedAIAssistantProps
               </div>
             </div>
           </div>
-          
-          <button
-            onClick={handleEmergencyAction}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition"
-          >
-            <Siren className="w-4 h-4" />
-            Emergency
-          </button>
-        </div>
-        
-        <div className="px-4 py-2 flex items-center justify-center gap-2">
-          <div className={cn(
-            'w-2 h-2 rounded-full transition-all',
-            voiceEnabled 
-              ? 'bg-green-500 shadow-[0_0_8px_theme(colors.green.500)] animate-pulse'
-              : 'bg-muted-foreground'
-          )} />
-          <span className="text-xs text-muted-foreground">
-            {voiceEnabled ? 'Voice Assistant Active' : 'Voice Disabled'}
-          </span>
-          {voiceSupported && (
-            <button
-              onClick={() => setVoiceEnabled(!voiceEnabled)}
-              className="ml-2 p-1 rounded-lg hover:bg-muted transition"
-              aria-label={voiceEnabled ? 'Disable voice' : 'Enable voice'}
-            >
-              {voiceEnabled ? (
-                <Volume2 className="w-4 h-4 text-primary" />
-              ) : (
-                <VolumeX className="w-4 h-4 text-muted-foreground" />
-              )}
+
+          <div className="flex items-center gap-2">
+            {/* Compact Language Selector */}
+            <LanguageSelector variant="dropdown" className="scale-90 origin-right" />
+
+              <button
+                onClick={() => {
+                  console.log('Button clicked: Emergency');
+                  handleEmergencyAction();
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/20 transition"
+              >
+
+              <Siren className="w-4 h-4" />
+              Emergency
             </button>
-          )}
+           </div>
+
+          {/* Second row: voice status + language indicator */}
+          <div className="px-4 py-2 flex items-center justify-center gap-4">
+           <div className="flex items-center gap-2">
+             <div className={cn(
+               'w-2 h-2 rounded-full transition-all',
+               voiceEnabled 
+                 ? 'bg-green-500 shadow-[0_0_8px_theme(colors.green.500)] animate-pulse'
+                 : 'bg-muted-foreground'
+             )} />
+             <span className="text-xs text-muted-foreground">
+               {voiceEnabled ? 'Voice Assistant Active' : 'Voice Disabled'}
+             </span>
+           </div>
+
+           {/* Voice Control Toggle */}
+           <div className="flex items-center gap-2">
+             <button
+               onClick={() => setVoiceEnabled(prev => !prev)}
+               className={cn(
+                 'p-1.5 rounded-lg transition-all',
+                 voiceEnabled 
+                   ? 'bg-green-100 text-green-600 hover:bg-green-200' 
+                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
+               )}
+             >
+               {voiceEnabled ? (
+                 <Volume2 className="w-3.5 h-3.5" />
+               ) : (
+                 <VolumeX className="w-3.5 h-3.5" />
+               )}
+             </button>
+             <span className="text-xs text-muted-foreground">
+               Voice Output
+             </span>
+           </div>
+
+           {/* Speech Recognition Status */}
+           <div className="flex items-center gap-2">
+             <div className={cn(
+               'w-2 h-2 rounded-full transition-all',
+               isListening 
+                 ? 'bg-red-500 shadow-[0_0_8px_theme(colors.red.500)] animate-pulse'
+                 : voice.isSupported
+                 ? 'bg-blue-500 shadow-[0_0_8px_theme(colors.blue.500)]'
+                 : 'bg-muted-foreground'
+             )} />
+             <span className="text-xs text-muted-foreground">
+               {isListening 
+                 ? 'Listening...'
+                 : voice.isSupported
+                 ? 'Speech Ready'
+                 : 'Speech Unavailable'}
+             </span>
+           </div>
+
+           <div className="flex items-center gap-2">
+             <div
+               className={cn(
+                 'w-2 h-2 rounded-full transition-all',
+                 clientLocation
+                   ? 'bg-emerald-500 shadow-[0_0_8px_theme(colors.emerald.500)]'
+                   : locStatus === 'pending'
+                     ? 'bg-amber-400 animate-pulse'
+                     : 'bg-muted-foreground'
+               )}
+             />
+             <span className="text-xs text-muted-foreground flex items-center gap-1">
+               <MapPin className="w-3 h-3" />
+               {clientLocation
+                 ? 'Location on (NLP + local context)'
+                 : locStatus === 'denied' || locStatus === 'unsupported'
+                   ? 'Location off'
+                   : 'Locating…'}
+             </span>
+           </div>
+         </div>
+
+          {/* Language Indicator */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">
+              {LANGUAGES[effectiveLanguage]?.flag || '🌐'} {LANGUAGES[effectiveLanguage]?.nativeName || 'English'}
+            </span>
+            {isAutoLanguage && (
+              <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[10px]">AUTO</span>
+            )}
+          </div>
         </div>
       </header>
+
+      {/* Language Quick-Switch Bar (shows when user manually selected a language) */}
+      {!isAutoLanguage && (
+        <div className="px-4 py-2 flex justify-center bg-background/90 backdrop-blur-xl border-b border-border">
+          <button
+            onClick={() => setLanguage('auto')}
+            className="text-xs text-primary hover:underline flex items-center gap-1"
+          >
+            <Globe className="w-3 h-3" />
+            Switch to Auto Detect
+          </button>
+        </div>
+      )}
 
       {/* ========== MAIN CONTENT ========== */}
       <main className="flex-1 overflow-hidden relative">
@@ -623,10 +490,28 @@ export function UnifiedAIAssistant({ role, onNavigate }: UnifiedAIAssistantProps
                 transition={{ delay: 0.5 }}
                 className="text-sm text-muted-foreground mb-2"
               >
-                {isListening ? 'Listening...' : 'Tap to speak or use text input'}
-              </motion.p>
-              
-              {voiceSupported && (
+                {isListening
+                  ? 'Speak, then pause — we send after a short pause. Or tap the mic to stop.'
+                  : 'Tap the mic, speak, pause to send (or tap mic again to stop) — or type below.'}
+                 </motion.p>
+                
+                {/* Live Transcript Display */}
+                {isListening && displayTranscript && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="mt-4 max-w-lg mx-auto"
+                  >
+                    <div className="bg-muted/50 border border-border rounded-xl p-4">
+                      <p className="text-sm text-muted-foreground text-center italic">
+                        {displayTranscript}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+
+              {voice.isSupported && (
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -693,7 +578,7 @@ export function UnifiedAIAssistant({ role, onNavigate }: UnifiedAIAssistantProps
             ))}
             
             {/* Processing Indicator */}
-            {isProcessing && (
+            {voice.processing && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -726,34 +611,50 @@ export function UnifiedAIAssistant({ role, onNavigate }: UnifiedAIAssistantProps
               <div className="grid grid-cols-2 gap-3 px-4">
                 <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => onNavigate?.('/dashboard/health-log')}
+                  onClick={() => {
+                    console.log('Button clicked: Health Log');
+                    router.push('/dashboard/health-log');
+                  }}
+
                   className="p-4 rounded-xl bg-card border border-border hover:shadow-md transition text-left"
                 >
                   <Heart className="w-5 h-5 text-chart-1 mb-2" />
                   <p className="text-sm font-medium">Health Log</p>
                   <p className="text-xs text-muted-foreground">Track symptoms</p>
                 </motion.button>
-                <motion.button
+                  <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => onNavigate?.('/dashboard/chat')}
+                  onClick={() => {
+                    console.log('Button clicked: AI Chat');
+                    router.push('/dashboard/chat');
+                  }}
+
                   className="p-4 rounded-xl bg-card border border-border hover:shadow-md transition text-left"
                 >
                   <MessageSquare className="w-5 h-5 text-primary mb-2" />
                   <p className="text-sm font-medium">AI Chat</p>
                   <p className="text-xs text-muted-foreground">Ask questions</p>
                 </motion.button>
-                <motion.button
+                  <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => onNavigate?.('/dashboard/appointments')}
+                  onClick={() => {
+                    console.log('Button clicked: Book Visit');
+                    router.push('/dashboard/appointments');
+                  }}
+
                   className="p-4 rounded-xl bg-card border border-border hover:shadow-md transition text-left"
                 >
                   <Calendar className="w-5 h-5 text-chart-3 mb-2" />
                   <p className="text-sm font-medium">Book Visit</p>
                   <p className="text-xs text-muted-foreground">Make appointment</p>
                 </motion.button>
-                <motion.button
+                  <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => onNavigate?.('/dashboard/medicine')}
+                  onClick={() => {
+                    console.log('Button clicked: Medicines');
+                    router.push('/dashboard/medicine');
+                  }}
+
                   className="p-4 rounded-xl bg-card border border-border hover:shadow-md transition text-left"
                 >
                   <Pill className="w-5 h-5 text-chart-2 mb-2" />
@@ -769,18 +670,7 @@ export function UnifiedAIAssistant({ role, onNavigate }: UnifiedAIAssistantProps
       {/* ========== INPUT AREA ========== */}
       <div className="sticky bottom-0 z-50 bg-background/90 backdrop-blur-xl border-t border-border">
         {/* Emergency Alert Banner */}
-        {currentIntent?.type === 'emergency' && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-destructive/10 border-b border-destructive/20 px-4 py-2"
-          >
-            <div className="flex items-center gap-2 text-destructive text-sm">
-              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-              <span className="font-medium">Emergency Detected - Call 108 for real emergencies</span>
-            </div>
-          </motion.div>
-        )}
+        {/* Emergency banner now handled by actions + navigation */}
         
         {/* Disclaimer Banner */}
         {conversationHistory.length === 0 && (
@@ -798,10 +688,10 @@ export function UnifiedAIAssistant({ role, onNavigate }: UnifiedAIAssistantProps
             <button
               type="button"
               onClick={isListening ? stopListening : startListening}
-              disabled={!voiceSupported}
+              disabled={!voice.isSupported}
               className={cn(
                 'p-3 rounded-xl transition-all flex-shrink-0',
-                !voiceSupported
+                !voice.isSupported
                   ? 'bg-muted text-muted-foreground cursor-not-allowed'
                   : isListening
                   ? 'bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20'
@@ -820,8 +710,8 @@ export function UnifiedAIAssistant({ role, onNavigate }: UnifiedAIAssistantProps
             
             <input
               type="text"
-              value={recognizedText}
-              onChange={(e) => setRecognizedText(e.target.value)}
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
@@ -829,16 +719,16 @@ export function UnifiedAIAssistant({ role, onNavigate }: UnifiedAIAssistantProps
                 }
               }}
               placeholder={
-                voiceSupported
-                  ? "Type message or tap mic to speak..."
-                  : "Type your message..."
+                voice.isSupported
+                  ? "Ask anything, or tap the mic — speak, pause, and I’ll answer…"
+                  : "Type your question…"
               }
               className="flex-1 px-4 py-3 rounded-xl border border-border bg-background text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition"
             />
             
             <button
               type="submit"
-              disabled={!recognizedText.trim() || isProcessing}
+              disabled={!inputText.trim() || voice.processing}
               className="p-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-40 flex-shrink-0"
             >
               <Send className="w-5 h-5" />
@@ -849,10 +739,10 @@ export function UnifiedAIAssistant({ role, onNavigate }: UnifiedAIAssistantProps
         {/* Status Bar */}
         <div className="px-4 pb-3 pt-1 flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            {isSpeaking && <span className="flex items-center gap-1"><Volume2 className="w-3 h-3" /> Speaking...</span>}
-            {isProcessing && <span className="flex items-center gap-1"><Brain className="w-3 h-3" /> Processing...</span>}
+            {voice.speaking && <span className="flex items-center gap-1"><Volume2 className="w-3 h-3" /> Speaking...</span>}
+            {voice.processing && <span className="flex items-center gap-1"><Brain className="w-3 h-3" /> Processing...</span>}
           </div>
-          <span>AI assistant • Always verify with healthcare professionals</span>
+          <span>Voice & chat assistant • Not a substitute for in-person care</span>
         </div>
       </div>
     </div>

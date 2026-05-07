@@ -1,0 +1,103 @@
+{
+  "_readme": "Edit languages array; maps merge over app defaults. Valid JSON only.",
+  "version": 1,
+  "languages": [
+    {
+      "code": "en",
+      "name": "English",
+      "nativeName": "English",
+      "webSpeechBcp47": "en-IN",
+      "browserTtsBcp47": "en-IN"
+    },
+    {
+      "code": "hi",
+      "name": "Hindi",
+      "nativeName": "हिन्दी",
+      "webSpeechBcp47": "hi-IN",
+      "browserTtsBcp47": "hi-IN"
+    },
+    {
+      "code": "kn",
+      "name": "Kannada",
+      "nativeName": "ಕನ್ನಡ",
+      "webSpeechBcp47": "kn-IN",
+      "browserTtsBcp47": "kn-IN"
+    },
+    {
+      "code": "ta",
+      "name": "Tamil",
+      "nativeName": "தமிழ்",
+      "webSpeechBcp47": "ta-IN",
+      "browserTtsBcp47": "ta-IN"
+    },
+    {
+      "code": "te",
+      "name": "Telugu",
+      "nativeName": "తెలుగు",
+      "webSpeechBcp47": "te-IN",
+      "browserTtsBcp47": "te-IN"
+    },
+    {
+      "code": "ml",
+      "name": "Malayalam",
+      "nativeName": "മലയാളം",
+      "webSpeechBcp47": "ml-IN",
+      "browserTtsBcp47": "ml-IN"
+    },
+    {
+      "code": "mr",
+      "name": "Marathi",
+      "nativeName": "मराठी",
+      "webSpeechBcp47": "mr-IN",
+      "browserTtsBcp47": "mr-IN"
+    },
+    {
+      "code": "bn",
+      "name": "Bengali",
+      "nativeName": "বাংলা",
+      "webSpeechBcp47": "bn-IN",
+      "browserTtsBcp47": "bn-IN"
+    },
+    {
+      "code": "gu",
+      "name": "Gujarati",
+      "nativeName": "ગુજરાતી",
+      "webSpeechBcp47": "gu-IN",
+      "browserTtsBcp47": "gu-IN"
+    },
+    {
+      "code": "pan",
+      "name": "Punjabi",
+      "nativeName": "ਪੰਜਾਬੀ",
+      "webSpeechBcp47": "pa-IN",
+      "browserTtsBcp47": "pa-IN"
+    },
+    {
+      "code": "ur",
+      "name": "Urdu",
+      "nativeName": "اردو",
+      "webSpeechBcp47": "ur-IN",
+      "browserTtsBcp47": "ur-IN"
+    },
+    {
+      "code": "hinglish",
+      "webSpeechBcp47": "hi-IN",
+      "browserTtsBcp47": "hi-IN"
+    },
+    {
+      "code": "tanglish",
+      "webSpeechBcp47": "ta-IN",
+      "browserTtsBcp47": "ta-IN"
+    },
+    {
+      "code": "kanglish",
+      "webSpeechBcp47": "kn-IN",
+      "browserTtsBcp47": "kn-IN"
+    },
+    {
+      "code": "auto",
+      "webSpeechBcp47": "en-IN",
+      "browserTtsBcp47": "en-IN"
+    }
+  ]
+}

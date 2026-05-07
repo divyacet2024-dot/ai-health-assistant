@@ -11,8 +11,9 @@ export function useCopyToClipboard(): [
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
   const copy = async (text: string) => {
-    if (!navigator?.clipboard) {
-      console.warn('Clipboard not supported');
+    // 🔒 SSR Guard: Only run on client side
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      console.warn('Clipboard not supported or server environment');
       return;
     }
 

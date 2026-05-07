@@ -94,18 +94,18 @@ export default function LandingPage() {
               A unified AI platform connecting patients, medical students, doctors, and professors.
               Personalized dashboards, smart AI assistance, and seamless healthcare access — all in one place.
             </motion.p>
-            <motion.div
+             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
               className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10"
             >
               <Link
-                href="/ai-assistant"
+                href="/select-role"
                 className="inline-flex items-center gap-2 px-8 py-3.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:opacity-90 transition shadow-lg shadow-primary/25"
               >
                 <Zap className="w-4.5 h-4.5" />
-                Launch AI Assistant
+                Start Using Now
               </Link>
               <a
                 href="#features"
@@ -259,12 +259,13 @@ export default function LandingPage() {
         >
           <h2 className="text-3xl font-display font-extrabold mb-4">Ready to Experience the Future of Healthcare?</h2>
           <p className="text-muted-foreground mb-8">Choose your role and explore personalized AI-powered features.</p>
-          <Link
-            href="/select-role"
-            className="inline-flex items-center gap-2 px-10 py-4 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:opacity-90 transition shadow-lg shadow-primary/25"
-          >
-            Select Your Role <ArrowRight className="w-4.5 h-4.5" />
-          </Link>
+            <Link
+                href="/select-role"
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:opacity-90 transition shadow-lg shadow-primary/25"
+              >
+                <Zap className="w-4.5 h-4.5" />
+                Start Using Now
+              </Link>
         </motion.div>
       </section>
 

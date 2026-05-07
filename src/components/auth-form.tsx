@@ -127,7 +127,7 @@ export function AuthForm({ mode, role, roleLabel, extraFields = [] }: AuthFormPr
         setSuccess('Login successful! Redirecting to AI Assistant...');
         setLoading(false);
 
-        const redirectUrl = role === 'admin' ? '/admin' : '/ai-assistant';
+        const redirectUrl = role === 'admin' ? '/admin' : '/dashboard';
         window.location.href = redirectUrl;
       } catch (err) {
         setError('An error occurred. Please try again.');

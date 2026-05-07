@@ -5,3 +5,8 @@ export { useMediaQuery, useIsMobile, useIsTablet, useIsDesktop } from './use-med
 export { useMounted } from './use-mounted';
 export { useCopyToClipboard } from './use-copy-to-clipboard';
 export { useTheme } from './use-theme';
+export { useSpeechRecognition } from './use-speech-recognition';
+export { useLanguageDetector, useUserLanguage } from './use-language-detector';
+export type { LanguageCode } from '@/lib/languages';
+export { useUserLocation } from './use-user-location';
+export type { ClientLocationPayload } from './use-user-location';

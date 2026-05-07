@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import { UnifiedAIAssistant } from '@/components/UnifiedAIAssistant';
 import { UserRole } from '@/lib/types';
@@ -22,17 +20,13 @@ export default function AIAssistantPage() {
     setRoleState(r);
   }, [router]);
 
-  const handleNavigate = (path: string) => {
-    router.push(path);
-  };
-
   if (!mounted || !role) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <UnifiedAIAssistant role={role} onNavigate={handleNavigate} />
+      <div className="min-h-screen bg-background">
+      <UnifiedAIAssistant role={role} />
     </div>
   );
 }
