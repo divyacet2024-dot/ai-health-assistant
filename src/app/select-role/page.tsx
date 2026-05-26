@@ -2,12 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { Heart, ArrowLeft, ArrowRight, Users, GraduationCap, Stethoscope, BookOpen, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { UserRole, ROLES } from '@/lib/types';
 import { seedDemoUsers } from '@/lib/auth';
+import { motionTokens } from '@/lib/motion-variants';
 
 const ROLE_ICONS: Record<UserRole, React.ComponentType<{ className?: string }>> = {
   patient: Users,
@@ -32,6 +33,7 @@ const ROLE_BORDERS: Record<UserRole, string> = {
 
 export default function SelectRolePage() {
   const router = useRouter();
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => { seedDemoUsers(); }, []);
 
@@ -63,8 +65,9 @@ export default function SelectRolePage() {
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
         <div className="max-w-4xl w-full">
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: motionTokens.duration.normal }}
             className="text-center mb-10"
           >
             <h1 className="text-3xl sm:text-4xl font-display font-extrabold">Choose Your Role</h1>
@@ -80,9 +83,9 @@ export default function SelectRolePage() {
               return (
                 <motion.button
                   key={roleKey}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
+                  transition={{ delay: prefersReducedMotion ? 0 : i * motionTokens.stagger.normal, duration: motionTokens.duration.normal }}
                   onClick={() => handleSelect(roleKey)}
                   className={cn(
                     'group relative bg-card border border-border rounded-2xl p-6 text-left hover:shadow-xl transition-all duration-300',
@@ -90,7 +93,7 @@ export default function SelectRolePage() {
                   )}
                 >
                   <div className={cn(
-                    'w-14 h-14 rounded-2xl bg-gradient-to-br flex items-center justify-center mb-4',
+                    'w-14 h-14 rounded-2xl bg-linear-to-br flex items-center justify-center mb-4',
                     ROLE_GRADIENTS[roleKey]
                   )}>
                     <Icon className="w-7 h-7 text-white" />
@@ -115,9 +118,9 @@ export default function SelectRolePage() {
 
           {/* Admin link */}
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: prefersReducedMotion ? 0 : 0.5, duration: motionTokens.duration.normal }}
             className="text-center mt-8"
           >
             <Link href="/auth/admin" className="text-sm text-muted-foreground hover:text-foreground transition">

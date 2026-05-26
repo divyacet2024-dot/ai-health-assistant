@@ -6,7 +6,7 @@ import { Mail, Send, Inbox, ArrowRight, Clock, Check, FileText, Megaphone, Award
 import { AppShell } from '@/components/app-shell';
 import { cn } from '@/lib/utils';
 import { getRole } from '@/lib/store';
-import { getSession } from '@/lib/auth';
+import { useAuthSession } from '@/hooks/use-auth-session';
 import { UserRole } from '@/lib/types';
 import { getInbox, getSentMessages, sendMessage, markMessageRead, Message, seedCommunicationData } from '@/lib/communication';
 
@@ -19,6 +19,7 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 export default function MessagesPage() {
+  const { session } = useAuthSession();
   const [role, setRoleState] = useState<UserRole | null>(null);
   const [inbox, setInbox] = useState<Message[]>([]);
   const [sent, setSent] = useState<Message[]>([]);
@@ -48,10 +49,9 @@ export default function MessagesPage() {
 
   function handleSend() {
     if (!toName || !subject || !content || !role) return;
-    const session = getSession();
     sendMessage({
-      fromId: session?.userId || 'unknown',
-      fromName: session?.name || 'Unknown',
+      fromId: session?.user?.id || 'unknown',
+      fromName: session?.user?.name || 'Unknown',
       fromRole: role,
       toId: 'target',
       toName,

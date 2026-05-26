@@ -61,7 +61,7 @@ export default function VideosPage() {
               transition={{ delay: i * 0.05 }}
               className="group bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg transition-shadow"
             >
-              <div className="aspect-video bg-gradient-to-br from-primary/20 via-accent/10 to-chart-3/20 flex items-center justify-center relative">
+              <div className="aspect-video bg-linear-to-br from-primary/20 via-accent/10 to-chart-3/20 flex items-center justify-center relative">
                 <div className="w-14 h-14 rounded-full bg-primary/20 backdrop-blur flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Play className="w-6 h-6 text-primary ml-0.5" />
                 </div>

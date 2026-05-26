@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import {
   Heart, ArrowRight, MessageSquare, Calendar, Pill, BookOpen,
   Stethoscope, GraduationCap, Users, Shield, Globe, Sparkles,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeSwitcher } from '@/components/theme-switcher';
+import { motionTokens } from '@/lib/motion-variants';
 
 const ROLES_PREVIEW = [
   { icon: '🏥', label: 'Patient', color: 'from-blue-500/20 to-cyan-500/20 border-blue-500/30', text: 'text-blue-600 dark:text-blue-400', features: ['AI Health Chat', 'Book Appointments', 'Medicine Info', 'Lab Reports'] },
@@ -36,6 +37,7 @@ const STATS = [
 
 export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return null;
 
@@ -67,17 +69,18 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: motionTokens.duration.normal }}
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-6"
             >
               <Sparkles className="w-3.5 h-3.5" />
               AI-Powered Healthcare & Education Platform
             </motion.div>
             <motion.h1
-              initial={{ opacity: 0, y: 20 }}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              transition={{ delay: prefersReducedMotion ? 0 : motionTokens.stagger.tight, duration: motionTokens.duration.normal }}
               className="text-4xl sm:text-5xl lg:text-6xl font-display font-extrabold tracking-tight leading-[1.1]"
             >
               One Platform for{' '}
@@ -86,18 +89,18 @@ export default function LandingPage() {
               </span>
             </motion.h1>
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: prefersReducedMotion ? 0 : motionTokens.stagger.normal * 2, duration: motionTokens.duration.normal }}
               className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
             >
               A unified AI platform connecting patients, medical students, doctors, and professors.
               Personalized dashboards, smart AI assistance, and seamless healthcare access — all in one place.
             </motion.p>
              <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: prefersReducedMotion ? 0 : motionTokens.stagger.normal * 3, duration: motionTokens.duration.normal }}
               className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10"
             >
               <Link
@@ -118,19 +121,19 @@ export default function LandingPage() {
 
           {/* Role Preview Cards */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: prefersReducedMotion ? 0 : motionTokens.stagger.normal * 4, duration: motionTokens.duration.slow }}
             className="mt-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
           >
             {ROLES_PREVIEW.map((role, i) => (
               <motion.div
                 key={role.label}
-                initial={{ opacity: 0, y: 20 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 + i * 0.1 }}
+                transition={{ delay: prefersReducedMotion ? 0 : 0.5 + i * motionTokens.stagger.normal, duration: motionTokens.duration.normal }}
                 className={cn(
-                  'relative p-5 rounded-2xl border bg-gradient-to-br backdrop-blur-sm hover:scale-[1.02] transition-transform cursor-default',
+                  'relative p-5 rounded-2xl border bg-linear-to-br backdrop-blur-sm hover:scale-[1.02] transition-transform cursor-default',
                   role.color
                 )}
               >
@@ -157,10 +160,10 @@ export default function LandingPage() {
             {STATS.map((stat, i) => (
               <motion.div
                 key={stat.label}
-                initial={{ opacity: 0, y: 15 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
+                transition={{ delay: prefersReducedMotion ? 0 : i * motionTokens.stagger.normal, duration: motionTokens.duration.normal }}
                 className="text-center"
               >
                 <p className="text-3xl md:text-4xl font-display font-extrabold text-primary">{stat.value}</p>
@@ -184,10 +187,10 @@ export default function LandingPage() {
             {FEATURES.map((feat, i) => (
               <motion.div
                 key={feat.label}
-                initial={{ opacity: 0, y: 15 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.08 }}
+                transition={{ delay: prefersReducedMotion ? 0 : i * 0.08, duration: motionTokens.duration.normal }}
                 className="bg-card border border-border rounded-2xl p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
@@ -206,9 +209,10 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-2 gap-10">
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
+              initial={prefersReducedMotion ? false : { opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
+              transition={{ duration: motionTokens.duration.normal }}
             >
               <h3 className="text-sm font-bold text-destructive uppercase tracking-wider mb-4">The Problem</h3>
               <ul className="space-y-3">
@@ -226,9 +230,10 @@ export default function LandingPage() {
               </ul>
             </motion.div>
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
+              initial={prefersReducedMotion ? false : { opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
+              transition={{ duration: motionTokens.duration.normal }}
             >
               <h3 className="text-sm font-bold text-chart-3 uppercase tracking-wider mb-4">Our Solution</h3>
               <ul className="space-y-3">
@@ -252,9 +257,10 @@ export default function LandingPage() {
       {/* CTA */}
       <section className="py-24 px-4 sm:px-6 text-center">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          transition={{ duration: motionTokens.duration.normal }}
           className="max-w-2xl mx-auto"
         >
           <h2 className="text-3xl font-display font-extrabold mb-4">Ready to Experience the Future of Healthcare?</h2>

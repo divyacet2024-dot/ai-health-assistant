@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import { motion } from 'motion/react';
 import {
   Users, Shield, CheckCircle, XCircle, Clock, Trash2,
@@ -10,8 +11,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ThemeSwitcher } from '@/components/theme-switcher';
+import { useAuthSession } from '@/hooks/use-auth-session';
 import {
-  getSession, logout, getUsersByRole, updateUserStatus,
+  getUsersByRole, updateUserStatus,
   deleteUser, getAdminStats, seedDemoUsers, RegisteredUser,
 } from '@/lib/auth';
 
@@ -30,6 +32,7 @@ const STATUS_CONFIG: Record<string, { icon: React.ComponentType<{ className?: st
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const { session } = useAuthSession();
   const [mounted, setMounted] = useState(false);
   const [users, setUsers] = useState<RegisteredUser[]>([]);
   const [roleFilter, setRoleFilter] = useState('all');
@@ -40,13 +43,13 @@ export default function AdminDashboard() {
   useEffect(() => {
     setMounted(true);
     seedDemoUsers();
-    const session = getSession();
-    if (!session || session.role !== 'admin') {
+    const sessionRole = (session?.user as any)?.role;
+    if (!session || sessionRole !== 'admin') {
       router.push('/auth/admin');
       return;
     }
     refreshData();
-  }, [router]);
+  }, [router, session]);
 
   function refreshData() {
     setUsers(getUsersByRole(roleFilter));
@@ -70,14 +73,14 @@ export default function AdminDashboard() {
   }
 
   function handleLogout() {
-    logout();
+    void signOut({ redirect: false });
     router.push('/auth/admin');
   }
 
   if (!mounted) return null;
 
-  const session = getSession();
-  if (!session || session.role !== 'admin') return null;
+  const sessionRole = (session?.user as any)?.role;
+  if (!session || sessionRole !== 'admin') return null;
 
   const filteredUsers = users.filter((u) => {
     const matchSearch = !search ||

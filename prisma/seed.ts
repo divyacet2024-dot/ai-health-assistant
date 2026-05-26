@@ -34,9 +34,10 @@ async function main() {
   for (const userData of demoUsers) {
     const hashedPassword = await bcrypt.hash(userData.password, 12)
 
-    const totpSecret = [UserRole.ADMIN, UserRole.DOCTOR].includes(userData.role)
-      ? speakeasy.generateSecret({ length: 20 }).base32
-      : null
+    const totpSecret =
+      userData.role === UserRole.ADMIN || userData.role === UserRole.DOCTOR
+        ? speakeasy.generateSecret({ length: 20 }).base32
+        : null
 
     await prisma.user.upsert({
       where: { email: userData.email },

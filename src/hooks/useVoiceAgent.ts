@@ -8,18 +8,17 @@ import {
   type ClientGeoPayload,
 } from '@/lib/voice/voiceAgent';
 import type { BookingFlowState } from '@/lib/voice/bookingConversation';
-import { getSession } from '@/lib/auth';
+import { useAuthSession } from '@/hooks/use-auth-session';
 import {
   ensureVoiceLanguagesLoaded,
   getVoiceLocales,
   stripVoiceOutputForSpeech,
 } from '@/lib/voice-language-registry';
 
-function resolvePatientLabel(explicit?: string | null): string | undefined {
+function resolvePatientLabel(explicit?: string | null, sessionName?: string | null): string | undefined {
   const trimmed = explicit?.trim();
   if (trimmed) return trimmed;
-  if (typeof window === 'undefined') return undefined;
-  return getSession()?.name?.trim() || undefined;
+  return sessionName?.trim() || undefined;
 }
 
 /** After this much quiet time with something spoken, auto-send (browser Web Speech only). */
@@ -74,6 +73,7 @@ function pickSupportedMimeType(): string {
 }
 
 export function useVoiceAgent(params: UseVoiceAgentParams) {
+  const { session } = useAuthSession();
   const hasWhisperStt = useMemo(() => getHasWhisperStt(), []);
 
   useEffect(() => {
@@ -211,7 +211,7 @@ export function useVoiceAgent(params: UseVoiceAgentParams) {
           userText: trimmed,
           history: historyRef.current,
           bookingFlow: bookingFlowRef.current,
-          patientName: resolvePatientLabel(params.patientName),
+          patientName: resolvePatientLabel(params.patientName, session?.user?.name ?? null),
           voiceMode: true,
         });
         bookingFlowRef.current = result.nextBookingFlow ?? null;
@@ -728,7 +728,7 @@ export function useVoiceAgent(params: UseVoiceAgentParams) {
           userText,
           history: historyRef.current,
           bookingFlow: bookingFlowRef.current,
-          patientName: resolvePatientLabel(params.patientName),
+          patientName: resolvePatientLabel(params.patientName, session?.user?.name ?? null),
           voiceMode: false,
         });
         bookingFlowRef.current = result.nextBookingFlow ?? null;

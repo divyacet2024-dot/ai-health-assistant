@@ -9,10 +9,10 @@ export async function POST(request: NextRequest) {
   try {
     // Get form data
     const formData = await request.formData();
-    const audioBlob = formData.get('audio') as Blob;
+    const audioBlob = (formData.get('audio') || formData.get('file')) as Blob;
     const language = (formData.get('language') as string) || 'en-IN';
 
-    if (!audioBlob || audioBlob.size === 0) {
+    if (!audioBlob || (audioBlob as Blob).size === 0) {
       return NextResponse.json(
         { error: 'No audio provided' },
         { status: 400 }

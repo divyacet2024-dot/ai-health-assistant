@@ -2,21 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
 import { COLLECTIONS } from '@/lib/models';
 
-import { getServerSession } from 'next-auth/next';
-import { authConfig } from '../auth/[...nextauth]/route';
+import { getToken } from 'next-auth/jwt';
+
 import { hasPermission } from '@/lib/rbac';
+
+
 import type { UserRole } from '@prisma/client';
 
 // GET appointments (RBAC protected)
 export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authConfig)
-    if (!session?.user?.id || !session.user.role) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const token = await getToken({ req: req as any, secret: process.env.NEXTAUTH_SECRET });
+    const userId = token?.sub;
+    const role = token?.role as UserRole | undefined;
+
+    if (!userId || !role) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const role = session.user.role as UserRole
-    const userId = session.user.id
 
     // Patients: own appointments only
     // Doctors/Admin: all appointments

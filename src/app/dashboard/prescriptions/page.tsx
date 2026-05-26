@@ -6,11 +6,12 @@ import { FileText, Plus, Download, X, Check, Calendar, Pill, User, Stethoscope }
 import { AppShell } from '@/components/app-shell';
 import { cn } from '@/lib/utils';
 import { getRole } from '@/lib/store';
-import { getSession } from '@/lib/auth';
+import { useAuthSession } from '@/hooks/use-auth-session';
 import { UserRole } from '@/lib/types';
 import { getPrescriptions, addPrescription, Prescription, seedCommunicationData } from '@/lib/communication';
 
 export default function PrescriptionsPage() {
+  const { session } = useAuthSession();
   const [role, setRoleState] = useState<UserRole | null>(null);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [selected, setSelected] = useState<Prescription | null>(null);
@@ -50,10 +51,9 @@ export default function PrescriptionsPage() {
 
   function handleCreate() {
     if (!patientName || !diagnosis || !medicines[0].name) return;
-    const session = getSession();
     addPrescription({
-      doctorName: session?.name || 'Doctor',
-      doctorId: session?.userId || 'unknown',
+      doctorName: session?.user?.name || 'Doctor',
+      doctorId: session?.user?.id || 'unknown',
       patientName,
       patientId: 'patient',
       diagnosis,

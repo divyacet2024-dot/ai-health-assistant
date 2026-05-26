@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   LayoutDashboard, MessageSquare, Calendar, Pill, FileText,
@@ -16,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { UserRole, ROLES, LANGUAGES, Language } from '@/lib/types';
 import { getRole, setRole, clearRole, getLang, setLang } from '@/lib/store';
-import { getSession, logout } from '@/lib/auth';
+import { useAuthSession } from '@/hooks/use-auth-session';
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
 
@@ -99,21 +100,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [langOpen, setLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState<Language>('en');
   const [mounted, setMounted] = useState(false);
+  const { session, isAuthenticated } = useAuthSession();
 
   useEffect(() => {
     setMounted(true);
-    const session = getSession();
     const r = getRole();
-    if (!session && !r) { router.push('/select-role'); return; }
-    if (session && !r && session.role !== 'admin') {
-      // Session exists but role not set in store — sync it
-      setRole(session.role as UserRole);
-      setRoleState(session.role as UserRole);
+    if (!session && !r && !isAuthenticated) {
+      router.push('/select-role');
+      return;
+    }
+    const roleFromSession = (session?.user as any)?.role as UserRole | undefined;
+    if (session && !r && roleFromSession) {
+      setRole(roleFromSession);
+      setRoleState(roleFromSession);
     } else if (r) {
       setRoleState(r);
     }
     setCurrentLang(getLang());
-  }, [router]);
+  }, [router, session, isAuthenticated]);
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
@@ -124,7 +128,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const RoleIcon = ROLE_ICONS[role];
 
   function handleSwitchRole() {
-    logout();
+    void signOut({ redirect: false });
     clearRole();
     router.push('/select-role');
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -20,6 +20,7 @@ import { useVoiceAgent } from '@/hooks/useVoiceAgent';
 import { useUserLocation } from '@/hooks/use-user-location';
 import { useLanguageDetector, useUserLanguage } from '@/hooks/use-language-detector';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import { fadeUp, scaleIn, subtleSpring, motionTokens } from '@/lib/motion-variants';
 
 // ========== INTENT DETECTION ==========
 
@@ -171,19 +172,13 @@ interface UnifiedAIAssistantProps {
   role: UserRole;
 }
 
-const motionVariants = {
-  pop: { initial: { opacity: 0, scale: 0.96 }, animate: { opacity: 1, scale: 1 } },
-  fadeUp: { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } },
-  fadeIn: { initial: { opacity: 0 }, animate: { opacity: 1 } },
-  presence: { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 } },
-} as const;
-
 export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
   const [inputText, setInputText] = useState('');
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
   const [showReasoning, setShowReasoning] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const prefersReducedMotion = useReducedMotion();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -422,19 +417,22 @@ export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
         </div>
 
         {/* ========== CONVERSATION AREA ========== */}
-        <div className="relative z-10 flex-1 overflow-y-auto p-4 max-w-2xl mx-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+        <div className="relative z-10 flex-1 overflow-y-auto p-3 sm:p-4 pb-24 max-w-2xl mx-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
           
           {/* Welcome Message */}
           {conversationHistory.length === 0 && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              variants={fadeUp}
+              initial={prefersReducedMotion ? false : 'hidden'}
+              animate="visible"
+              transition={prefersReducedMotion ? { duration: 0 } : subtleSpring}
               className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4"
             >
               <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: 'spring', damping: 15 }}
+                variants={scaleIn}
+                initial={prefersReducedMotion ? false : 'hidden'}
+                animate="visible"
+                transition={prefersReducedMotion ? { duration: 0 } : subtleSpring}
                 className={cn(
                   'w-32 h-32 rounded-full flex items-center justify-center mb-6',
                   roleInfo.bgColor,
@@ -445,18 +443,20 @@ export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
               </motion.div>
               
               <motion.h1
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
+                variants={fadeUp}
+                initial={prefersReducedMotion ? false : 'hidden'}
+                animate="visible"
+                transition={prefersReducedMotion ? { duration: 0 } : { ...subtleSpring, delay: 0.08 }}
                 className="text-2xl md:text-3xl font-display font-bold mb-3"
               >
                 {getTimeGreeting()}, {roleInfo.label}
               </motion.h1>
               
               <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+                variants={fadeUp}
+                initial={prefersReducedMotion ? false : 'hidden'}
+                animate="visible"
+                transition={prefersReducedMotion ? { duration: 0 } : { ...subtleSpring, delay: 0.16 }}
                 className="text-lg text-muted-foreground mb-8"
               >
                 Your AI-powered healthcare assistant
@@ -465,7 +465,7 @@ export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4 }}
+                transition={{ delay: prefersReducedMotion ? 0 : 0.4, duration: prefersReducedMotion ? 0 : motionTokens.duration.normal }}
                 className={cn(
                   'w-24 h-24 rounded-full flex items-center justify-center mb-8 cursor-pointer transition-all hover:scale-105',
                   isListening 
@@ -487,7 +487,7 @@ export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
+                transition={{ delay: prefersReducedMotion ? 0 : 0.5, duration: prefersReducedMotion ? 0 : motionTokens.duration.fast }}
                 className="text-sm text-muted-foreground mb-2"
               >
                 {isListening
@@ -498,13 +498,14 @@ export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
                 {/* Live Transcript Display */}
                 {isListening && displayTranscript && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="mt-4 max-w-lg mx-auto"
+                    variants={fadeUp}
+                    initial={prefersReducedMotion ? false : 'hidden'}
+                    animate="visible"
+                    transition={{ duration: prefersReducedMotion ? 0 : motionTokens.duration.normal }}
+                    className="mt-4 max-w-lg mx-auto w-full"
                   >
-                    <div className="bg-muted/50 border border-border rounded-xl p-4">
-                      <p className="text-sm text-muted-foreground text-center italic">
+                    <div className="bg-muted/50 border border-border rounded-xl p-3 sm:p-4 max-h-[40vh] overflow-y-auto">
+                      <p className="text-sm text-muted-foreground text-center italic break-words leading-6">
                         {displayTranscript}
                       </p>
                     </div>
@@ -515,7 +516,7 @@ export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
+                  transition={{ delay: prefersReducedMotion ? 0 : 0.6, duration: prefersReducedMotion ? 0 : motionTokens.duration.fast }}
                   className="text-xs text-muted-foreground/70"
                 >
                   {voiceEnabled ? 'Voice feedback enabled' : 'Click volume icon to enable voice'}
@@ -525,7 +526,7 @@ export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.7 }}
+                transition={{ delay: prefersReducedMotion ? 0 : 0.7, duration: prefersReducedMotion ? 0 : motionTokens.duration.fast }}
                 className="mt-8 max-w-xs"
               >
                 <div className="bg-muted/50 border border-border rounded-xl p-3">
@@ -543,9 +544,10 @@ export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
             {conversationHistory.map((msg, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 10 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: prefersReducedMotion ? 0 : motionTokens.duration.fast }}
                 className={cn(
                   'flex gap-3 mb-4',
                   msg.isUser ? 'justify-end' : 'justify-start'
@@ -580,18 +582,25 @@ export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
             {/* Processing Indicator */}
             {voice.processing && (
               <motion.div
-                initial={{ opacity: 0 }}
+                initial={prefersReducedMotion ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
+                transition={{ duration: prefersReducedMotion ? 0 : motionTokens.duration.fast }}
                 className="flex items-center gap-3 mb-4"
               >
                 <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Bot className="w-4 h-4 text-primary" />
                 </div>
-                <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '300ms' }} />
-                  <span className="ml-2 text-xs text-muted-foreground">AI is thinking...</span>
+                <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-3 min-w-[210px]">
+                  <div className="space-y-2">
+                    <div className="h-2.5 rounded bg-primary/10 animate-pulse w-[85%]" />
+                    <div className="h-2.5 rounded bg-primary/10 animate-pulse w-[70%]" />
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="ml-2 text-xs text-muted-foreground">Generating response...</span>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -602,9 +611,9 @@ export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
           {/* No messages yet - show quick actions */}
           {conversationHistory.length === 0 && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
+              transition={{ delay: prefersReducedMotion ? 0 : 0.5, duration: prefersReducedMotion ? 0 : motionTokens.duration.normal }}
               className="mt-12 space-y-4"
             >
               <p className="text-center text-sm text-muted-foreground">Quick Actions</p>
@@ -668,7 +677,7 @@ export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
       </main>
 
       {/* ========== INPUT AREA ========== */}
-      <div className="sticky bottom-0 z-50 bg-background/90 backdrop-blur-xl border-t border-border">
+      <div className="sticky bottom-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border supports-[backdrop-filter]:bg-background/80 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         {/* Emergency Alert Banner */}
         {/* Emergency banner now handled by actions + navigation */}
         
@@ -683,14 +692,14 @@ export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
         )}
         
         {/* Text Input */}
-        <form onSubmit={handleTextSubmit} className="p-4">
+        <form onSubmit={handleTextSubmit} className="p-3 sm:p-4">
           <div className="flex items-end gap-3">
             <button
               type="button"
               onClick={isListening ? stopListening : startListening}
               disabled={!voice.isSupported}
               className={cn(
-                'p-3 rounded-xl transition-all flex-shrink-0',
+                'h-12 w-12 rounded-xl transition-all flex-shrink-0 inline-flex items-center justify-center active:scale-95',
                 !voice.isSupported
                   ? 'bg-muted text-muted-foreground cursor-not-allowed'
                   : isListening
@@ -723,13 +732,13 @@ export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
                   ? "Ask anything, or tap the mic — speak, pause, and I’ll answer…"
                   : "Type your question…"
               }
-              className="flex-1 px-4 py-3 rounded-xl border border-border bg-background text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition"
+              className="flex-1 h-12 px-4 rounded-xl border border-border bg-background text-sm sm:text-base focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition"
             />
             
             <button
               type="submit"
               disabled={!inputText.trim() || voice.processing}
-              className="p-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-40 flex-shrink-0"
+              className="h-12 w-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-40 flex-shrink-0 inline-flex items-center justify-center active:scale-95"
             >
               <Send className="w-5 h-5" />
             </button>
@@ -737,12 +746,12 @@ export function UnifiedAIAssistant({ role }: UnifiedAIAssistantProps) {
         </form>
         
         {/* Status Bar */}
-        <div className="px-4 pb-3 pt-1 flex items-center justify-between text-xs text-muted-foreground">
+        <div className="px-4 pb-3 pt-1 flex items-center justify-between text-xs text-muted-foreground gap-2">
           <div className="flex items-center gap-2">
             {voice.speaking && <span className="flex items-center gap-1"><Volume2 className="w-3 h-3" /> Speaking...</span>}
             {voice.processing && <span className="flex items-center gap-1"><Brain className="w-3 h-3" /> Processing...</span>}
           </div>
-          <span>Voice & chat assistant • Not a substitute for in-person care</span>
+          <span className="hidden sm:inline">Voice & chat assistant • Not a substitute for in-person care</span>
         </div>
       </div>
     </div>

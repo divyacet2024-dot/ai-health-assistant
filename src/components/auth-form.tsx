@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { motion } from 'motion/react';
 import { Heart, Eye, EyeOff, ArrowLeft, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserRole } from '@/lib/types';
-import { registerUser, loginUser } from '@/lib/auth';
+import { registerUser } from '@/lib/auth';
 import { setRole } from '@/lib/store';
 
 interface FieldConfig {
@@ -105,46 +106,50 @@ export function AuthForm({ mode, role, roleLabel, extraFields = [] }: AuthFormPr
       }
     } else {
       await new Promise((r) => setTimeout(r, 600));
-      
-      if (!email || !password) {
-        setError('Please enter your email and password.');
-        setLoading(false);
-        return;
-      }
 
-      try {
-        const result = loginUser(email, password, role);
-        if (!result.success) {
-          setError(result.error || 'Login failed. Please check your credentials.');
+        if (!email || !password) {
+          setError('Please enter your email and password.');
           setLoading(false);
           return;
         }
 
-        if (role !== 'admin') {
-          setRole(role as UserRole);
+        try {
+          const result = await signIn('credentials', {
+            redirect: false,
+            email,
+            password,
+            role,
+          });
+
+          if (!result || result.error) {
+            setError(result?.error || 'Login failed. Please check your credentials.');
+            setLoading(false);
+            return;
+          }
+
+          if (role !== 'admin') {
+            setRole(role as UserRole);
+          }
+
+          setSuccess('Login successful! Redirecting to AI Assistant...');
+          setLoading(false);
+
+          const redirectUrl = role === 'admin' ? '/admin' : '/dashboard';
+          window.location.href = redirectUrl;
+        } catch (err) {
+          setError('An error occurred. Please try again.');
+          setLoading(false);
+          console.error('Login error:', err);
         }
-
-        setSuccess('Login successful! Redirecting to AI Assistant...');
-        setLoading(false);
-
-        const redirectUrl = role === 'admin' ? '/admin' : '/dashboard';
-        window.location.href = redirectUrl;
-      } catch (err) {
-        setError('An error occurred. Please try again.');
-        setLoading(false);
-        console.error('Login error:', err);
+        return;
       }
-      return;
-    }
-
-    setLoading(false);
   }
 
   const needsApproval = mode === 'register' && (role === 'doctor' || role === 'professor');
 
   return (
     <div className="min-h-screen bg-background flex">
-      <div className={cn('hidden lg:flex lg:w-[45%] bg-gradient-to-br text-white flex-col justify-between p-10', colors.gradient)}>
+      <div className={cn('hidden lg:flex lg:w-[45%] bg-linear-to-br text-white flex-col justify-between p-10', colors.gradient)}>
         <div>
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
@@ -181,7 +186,7 @@ export function AuthForm({ mode, role, roleLabel, extraFields = [] }: AuthFormPr
               <ArrowLeft className="w-4 h-4" /> Back to role selection
             </Link>
             <div className="flex items-center gap-3">
-              <div className={cn('w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center', colors.gradient)}>
+              <div className={cn('w-12 h-12 rounded-xl bg-linear-to-br flex items-center justify-center', colors.gradient)}>
                 <span className="text-2xl">{icon}</span>
               </div>
               <div>

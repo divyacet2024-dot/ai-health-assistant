@@ -16,8 +16,8 @@ npm install pg                    # PostgreSQL client
 npm install prisma @prisma/client # ORM for PostgreSQL
 npm install mongoose              # MongoDB driver
 ```
-
-### 2. Update package.json Scripts
+#
+## 2. Update package.json Scripts
 
 Add these scripts to your `package.json`:
 

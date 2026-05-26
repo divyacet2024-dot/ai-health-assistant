@@ -17,8 +17,8 @@ export function useAuthSession() {
     session,
     isLoading: status === 'loading',
     isAuthenticated: status === 'authenticated',
-    userRole: session?.user?.role as string | undefined,
-    userId: session?.user?.id as string | undefined,
+    userRole: (session?.user as any)?.role as string | undefined,
+    userId: (session?.user as any)?.id as string | undefined,
     hasSession: !!session
   }
 }

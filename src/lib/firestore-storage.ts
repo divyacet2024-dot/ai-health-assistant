@@ -213,13 +213,13 @@ export async function exportHealthData(format: 'json' | 'csv'): Promise<string> 
       log.mood?.note ?? '',
       log.water?.glasses ?? '',
       log.exercise?.type ?? '',
-      log.exercise?.duration ?? '',
+      log.exercise?.durationMinutes ?? '',
       log.exercise?.intensity ?? '',
       log.nutrition?.breakfast ?? '',
       log.nutrition?.lunch ?? '',
       log.nutrition?.dinner ?? '',
-      log.symptoms?.join('; ') ?? '',
-      log.symptomSeverity ?? '',
+      log.symptoms?.symptoms?.join('; ') ?? '',
+      log.symptoms?.severity ?? '',
     ]);
 
     const csv = [headers, ...rows]

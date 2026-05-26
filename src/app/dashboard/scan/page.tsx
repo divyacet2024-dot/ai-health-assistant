@@ -251,7 +251,7 @@ function ScannerPage() {
                   )}
 
                   {/* Main Info Card */}
-                  <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-6">
+                  <div className="bg-linear-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-6">
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <h2 className="text-2xl font-display font-bold text-primary">

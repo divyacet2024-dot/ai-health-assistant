@@ -10,7 +10,7 @@ import { AppShell } from '@/components/app-shell';
 import { cn } from '@/lib/utils';
 import { UserRole, Appointment } from '@/lib/types';
 import { getRole } from '@/lib/store';
-import { getSession } from '@/lib/auth';
+import { useAuthSession } from '@/hooks/use-auth-session';
 import { MOCK_APPOINTMENTS, DEPARTMENTS, DOCTORS } from '@/lib/mock-data';
 
 // Use API with localStorage fallback
@@ -67,16 +67,16 @@ export default function AppointmentsPage() {
   const [doctor, setDoctor] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const { session } = useAuthSession();
   const [booked, setBooked] = useState<{ token: number; doctor: string; date: string; time: string } | null>(null);
   const [cancelConfirm, setCancelConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
     setRoleState(getRole());
-    const session = getSession();
-    if (session) setPatientName(session.name);
+    if (session?.user?.name) setPatientName(session.user.name);
     loadAppointmentsFromAPI().then(setAppointments);
-  }, []);
+  }, [session]);
 
   const filteredDoctors = DOCTORS.filter((d) => !dept || d.department === dept);
   const selectedDoctor = DOCTORS.find((d) => d.name === doctor);

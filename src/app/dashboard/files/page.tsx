@@ -6,13 +6,14 @@ import { Upload, FileText, Download, Trash2, Eye, Search, FolderOpen, Plus, X, F
 import { AppShell } from '@/components/app-shell';
 import { cn } from '@/lib/utils';
 import { getRole } from '@/lib/store';
-import { getSession } from '@/lib/auth';
+import { useAuthSession } from '@/hooks/use-auth-session';
 import { UserRole } from '@/lib/types';
 import { getUploadedFiles, addUploadedFile, deleteUploadedFile, UploadedFile, seedCommunicationData } from '@/lib/communication';
 
 const FILE_CATEGORIES = ['Anatomy', 'Physiology', 'Biochemistry', 'Pharmacology', 'Pathology', 'Microbiology', 'Medicine', 'Surgery', 'Forensic Medicine', 'Other'];
 
 export default function FilesPage() {
+  const { session } = useAuthSession();
   const [role, setRoleState] = useState<UserRole | null>(null);
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [search, setSearch] = useState('');
@@ -40,13 +41,12 @@ export default function FilesPage() {
 
   function handleUpload() {
     if (!fileName || !fileCategory) return;
-    const session = getSession();
     addUploadedFile({
       name: fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`,
       type: fileType,
       size: Math.floor(Math.random() * 5000000) + 500000,
       category: fileCategory,
-      uploadedBy: session?.name || 'Unknown',
+      uploadedBy: session?.user?.name || 'Unknown',
       uploadedByRole: role || 'professor',
       description: fileDesc,
       downloadUrl: '#',

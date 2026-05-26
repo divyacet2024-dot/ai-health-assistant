@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from 'react';
 import { UnifiedAIAssistant } from '@/components/UnifiedAIAssistant';
 import { UserRole } from '@/lib/types';
